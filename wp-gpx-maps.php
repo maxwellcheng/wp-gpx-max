@@ -21,6 +21,7 @@ define( 'WPGPXMAPS_CURRENT_VERSION', '1.7.05' );
 
 require 'wp-gpx-maps-utils.php';
 require 'wp-gpx-maps-admin.php';
+require 'wp-gpx-maps-Maxwell.php';
 
 add_shortcode( 'sgpx', 'wpgpxmaps_handle_shortcodes' );
 add_shortcode( 'sgpxf', 'wpgpxmaps_handle_folder_shortcodes' );
@@ -146,7 +147,7 @@ function wpgpxmaps_findValue( $attr, $attributeName, $optionName, $defaultValue 
 
 }
 
-function wpgpxmaps_handle_folder_shortcodes( $attr, $content = '' ) {
+function wpgpxmaps_handle_folder_shortcodes_notUsed( $attr, $content = '' ) {
 
 	$folder         = wpgpxmaps_findValue( $attr, 'folder', '', '' );
 	$pointsoffset   = wpgpxmaps_findValue( $attr, 'pointsoffset', 'wpgpxmaps_pointsoffset', 10 );
@@ -758,7 +759,7 @@ function wpgpxmaps_handle_shortcodes( $attr, $content = '' ) {
 		}
 		$output .= '</div>';
 	}
-	
+	maxUpSert($post,$gpx, $ngGalleries,$tot_len,$max_ele ,$min_ele ,$time_diff);
 	//$output .="--$download--";
 
 	/* Print download link */
