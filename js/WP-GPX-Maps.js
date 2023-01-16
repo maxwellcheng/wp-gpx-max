@@ -13,7 +13,7 @@ var WPGPXMAPS = {
 
 		/* In case of multiple polylines this function divide the points of each polyline. */
 		DividePolylinesPoints: function( mapData ) {
-
+			var isMultiGpx=mapData.length>0 && mapData[0].length>2;
 			var lastCut = 0;
 			var result = [];
 			var _len = mapData.length;
@@ -302,6 +302,92 @@ var WPGPXMAPS = {
 		},
 
 		Leaflet: function() {
+			this.AppPolylinesMax = function( mapData,popData, color1, currentIcon, startIcon, endIcon ,popup) {
+
+				var first = WPGPXMAPS.Utils.GetItemFromArray( mapData, 0 );
+
+				if ( '' == currentIcon ) {
+					currentIcon = 'https://maps.google.com/mapfiles/kml/pal4/icon25.png';
+				}
+
+				var CurrentPositionMarker = L.marker( first, { icon: L.icon ({
+					iconUrl: currentIcon,
+					iconSize: [ 32, 32 ], // Size of the icon.
+					iconAnchor: [ 16, 16 ] // Point of the icon which will correspond to marker's location.
+				})
+				});
+				CurrentPositionMarker.addTo( this.map );
+				CurrentPositionMarker.title = 'Current';
+
+				this.CurrentPositionMarker = CurrentPositionMarker;
+
+				var pointsArray = WPGPXMAPS.Utils.DividePolylinesPoints( mapData );
+
+				var lng = this.lng;
+				var EventSelectChart = this.EventSelectChart;
+
+				this.Bounds = mapData;
+
+				this.CenterMap();
+				for ( i = 0; i < pointsArray.length; i++ ) {
+					if ( i < color1.length ) {
+						color = color1[i];
+					} else {
+						color = color1[color1.length - 1];
+					}
+					try {
+						polyline[i] = L.polyline(  pointsArray[i], {color: color}).addTo( this.map );
+						this.Polylines.push( polyline[i] );
+
+						var context = this;
+
+						polyline[i].bindPopup(popData, {
+							minWidth: 250,
+							maxWidth: 250
+						});
+						polyline[i].on('popupopen', function (event) {
+							this.setStyle({
+								color: 'yellow',
+								opacity: 1.0
+							});
+							this.bringToFront();
+						});
+						polyline[i].on('popupclose', function (event) {
+							this.setStyle({
+								color: color,
+								opacity: 1.0
+							});
+});
+					} catch ( err ) {
+					}
+				}
+
+				if ( startIcon != '' ) {
+
+					var startMarker = L.marker( mapData[0], {icon: L.icon({
+						iconUrl: startIcon,
+						iconSize: [ 32, 32 ], // Size of the icon.
+						iconAnchor: [ 16, 16 ] // Point of the icon which will correspond to marker's location.
+					})
+					});
+
+					startMarker.addTo( this.map );
+					startMarker.title = 'Start';
+				}
+
+				if ( endIcon != '' ) {
+
+					var endMarker = L.marker( mapData[ mapData.length - 1 ], {icon: L.icon({
+						iconUrl: endIcon,
+						iconSize: [ 32, 32 ], // size of the icon
+						iconAnchor: [ 16, 16 ] // point of the icon which will correspond to marker's location
+					})
+					});
+
+					endMarker.addTo( this.map );
+					endMarker.title = 'End';
+				}
+			},
 			this.Bounds = [],
 			this.lng = {},
 			this.map = null,
@@ -880,7 +966,7 @@ var WPGPXMAPS = {
 				photos.push({
 					'lat': pos[0],
 					'lng': pos[1],
-					//'name': ngg_span_a.children[0].getAttribute( 'title' ),
+					//'name': ngg_span_a.children[0].getAttribute( 'title' ),  by Max
 					'name': ngg_span_a.getAttribute( 'title' ),
 					'url': ngg_span_a.children[0].getAttribute( 'src' ),
 					'thumbnail': ngg_span_a.children[0].getAttribute( 'src' )
@@ -996,7 +1082,16 @@ var WPGPXMAPS = {
 
 		/* Print Track. */
 		if ( mapData != '' ) {
-			map.AppPolylines( mapData, color1, currentIcon, startIcon, endIcon );
+			var isMultiGpx=mapData.length>0 && mapData[0].length>2;
+			if(isMultiGpx){
+				var colors=[color1,color2,color3,color4,color5,color6,color7]
+				var popData = params.popData;
+				for ( i = 0; i < mapData.length; i++ ) {
+					map.AppPolylinesMax( mapData[i], popData[i],colors[i%colors.length], currentIcon, startIcon, endIcon );
+				}
+			}else{
+				map.AppPolylines( mapData, color1, currentIcon, startIcon, endIcon );
+			}
 		}
 
 		/*

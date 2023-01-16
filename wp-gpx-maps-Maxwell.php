@@ -4,7 +4,7 @@
  * $nggalbum    = $wpdb->prefix . 'gpxdata';
 
 	// Create  table
-	$sql = "CREATE TABLE gpxData (
+	$sql = "CREATE TABLE wp_gpxdata (
 	id BIGINT(20) NOT NULL AUTO_INCREMENT ,
 	filename VARCHAR(255) NOT NULL ,
 	
@@ -38,8 +38,14 @@
 	
  * */
 
+function getGpxdataCount(){
+    global $wpdb;
+    $sql="select count(1) from wp_gpxdata";
+    return $wpdb->get_var($sql );
+}
+
 function maxUpSert($post,$filen, $ngGalleries,$total_distance_km,$max_elevation_m ,$min_elevation_m ,$total_time){
-    if($post->post_status != 'publish'){
+    if($post->post_status != 'publish' || $post->post_type !='post'){
         return;
     }
     $filename=basename($filen);
@@ -55,9 +61,9 @@ function maxUpSert($post,$filen, $ngGalleries,$total_distance_km,$max_elevation_
     
     global $wpdb;
     $values=[$filename,$post_id,$post_url,$post_title,$post_excerpt,$post_featured_image,$total_distance_km,$max_elevation_m ,$min_elevation_m ,$total_time,$ngGalleries,$cat_name ];
-    $sql="select count(1) from wp_gpxdata where filename='".$filename ."'";
+    $sql="select count(1) from wp_gpxdata where filename='".$filename ."' and post_id ='".$post_id."'";
     $insertSql= "INSERT INTO wp_gpxdata (filename,post_id,post_url,post_title,post_excerpt,post_featured_image,total_distance_km,max_elevation_m ,min_elevation_m ,total_time,nggallery,post_category ) VALUES ('" . implode( "','", $values ) ."') ";
-    $updateSql="UPDATE wp_gpxdata set post_id ='".$post_id."',post_url ='".$post_url."',post_title ='".$post_title."',post_excerpt ='".$post_excerpt."',post_featured_image ='".$post_featured_image."',total_distance_km ='".$total_distance_km."',max_elevation_m='".$max_elevation_m."',min_elevation_m ='".$min_elevation_m."',nggallery ='".$ngGalleries."',post_category ='".$cat_name."' where  filename='".$filename ."'";
+    $updateSql="UPDATE wp_gpxdata set post_url ='".$post_url."',post_title ='".$post_title."',post_excerpt ='".$post_excerpt."',post_featured_image ='".$post_featured_image."',total_distance_km ='".$total_distance_km."',max_elevation_m='".$max_elevation_m."',min_elevation_m ='".$min_elevation_m."',nggallery ='".$ngGalleries."',post_category ='".$cat_name."' where  filename='".$filename ."' and post_id ='".$post_id."'";
     if ($wpdb->get_var($sql )>0){
         if ( false === $wpdb->query($updateSql )) {
             return new WP_Error( 'db_insert_error', __( 'Could not insert term relationship into the database.' ), $wpdb->last_error );
@@ -78,7 +84,7 @@ function maxGetData($filen){
     if (!$data) {
         return '';
     }
-    $output="<center><a target=_blank href='".$data->post_url."'><span class='normalfont'>".$data->post_title."</span><br><img src='".$data->post_featured_image."' width=397></a></center><br><table class='normalfont' width=397><tr><td valign=top align=left width=25%>Category:</td><td>".$data->post_category."</td></tr><tr><td>Distance:</td><td>".$data->total_distance_km."</tr><tr><tr><td>Max Elev:</td><td>".$data->max_elevation_m."</tr><tr><td valign=top>Min Elev:</td><td>".$data->min_elevation_m."</td></tr><tr><td valign=top>Duration:</td><td>".$data->total_time."</td></tr><tr><td valign=top align=left width=60></td><td>".preg_replace("/\r\n|\r|\n/", '<br/>', $data->post_excerpt)."</td></tr></table>";
+    $output="<center><a target=_blank href='".$data->post_url."'><span class='normalfont'>".$data->post_title."</span><br><img src='".$data->post_featured_image."' width=250></a></center><br><table class='normalfont' width=250><tr><td valign=top align=left width=25%>\u5206\u985e:</td><td colspan='3'>".$data->post_category."</td></tr><tr><td>\u5168\u9577:</td><td>".$data->total_distance_km."<td valign=top>\u9700\u6642:</td><td>".$data->total_time."</td></tr><tr><td>\u6700\u9ad8:</td><td>".$data->max_elevation_m."<td valign=top>\u6700\u4f4e:</td><td>".$data->min_elevation_m."</td></tr><tr><td valign=top align=left width=60 colspan='4'>".preg_replace("/\r\n|\r|\n/", '<br/>', $data->post_excerpt)."</td></tr></table>";
     return $output;
 }
 
@@ -89,75 +95,124 @@ function wpgpxmaps_handle_folder_shortcodes( $attr, $content = '' ) {
 	$distanceType   = wpgpxmaps_findValue( $attr, 'distanceType', 'wpgpxmaps_distance_type', 0 );
 	$donotreducegpx = wpgpxmaps_findValue( $attr, 'donotreducegpx', 'wpgpxmaps_donotreducegpx', false );
 	$uom            = wpgpxmaps_findValue( $attr, 'uom', 'wpgpxmaps_unit_of_measure', '0' );
-
+	$skipcache      = wpgpxmaps_findValue( $attr, 'skipcache', 'wpgpxmaps_skipcache', '' );
+	
 	/* Fix folder path */
 	$sitePath = wp_gpx_maps_sitePath();
 	$folder   = trim( $folder );
 	$folder   = str_replace( array( '/', '\\' ), DIRECTORY_SEPARATOR, $folder );
 	$folder   = $sitePath . $folder;
 
-	$files = scandir( $folder );
-	$points_maps       = '[';
-	$popData       = '[';
-	foreach ( $files as $file ) {
-
-		if ( strtolower( substr( $file, - 4 ) ) == '.gpx' ) {
-
-			$gpx    = $folder . DIRECTORY_SEPARATOR . $file;
-			$pop=maxGetData($gpx);
-			if($pop ==''){
-			    continue;
-			}
-			$points = wpgpxmaps_getPoints_max( $gpx, $pointsoffset, false, $distanceType );
-			$points_x_lat  = $points->lat;
-			$points_x_lon  = $points->lon;
-			
-			
-			$points_route='[';
-			if ( is_array( $points_x_lat ) )
-			foreach ( array_keys( $points_x_lat ) as $i ) {
-				$_lat = (float) $points_x_lat[$i];
-				$_lon = (float) $points_x_lon[$i];
-
-				if ( 0 == $_lat && 0 == $_lon ) {
-				    $points_route       .= 'null,';
-
-				} else {
-				    $points_route .= '[' . number_format( (float) $points_x_lat[$i], 7, '.', '' ) . ',' . number_format( (float) $points_x_lon[$i], 7, '.', '' ) . '],';
-					$_dist = (float) $points->dist[$i];
-					
-					if ( '1' == $uom ) {
-						/* feet / miles */
-						$_dist *= 0.000621371192;
-
-					} elseif ( '2' == $uom ) {
-						/* meters / kilometers */
-						$_dist = (float) ( $_dist / 1000 );
-
-					} elseif ( '3' == $uom ) {
-						/* meters / nautical miles */
-						$_dist = (float) ( $_dist / 1000 / 1.852 );
-
-					} elseif ( '4' == $uom ) {
-						/* meters / miles */
-						$_dist *= 0.000621371192;
-
-					} elseif ( '5' == $uom ) {
-						/* feet / nautical miles */
-						$_dist = (float) ( $_dist / 1000 / 1.852 );
-					}
-
-				}
-			}
-			$points_route .='],';
-			$points_maps.=$points_route;
-			$popData.='"'.$pop.'",';
-			//print_r( $points );
-		}
+	//Max load cache
+	/* Add file modification time to cache filename to catch new uploads with same file name */
+	$mtime = wp_gpx_maps_sitePath() . str_replace( array( '/', '\\' ), DIRECTORY_SEPARATOR, trim( $folder ) );
+	if ( is_dir( $mtime ) ) {
+	    $mtime = filemtime( $mtime );
+	} else {
+	    $mtime = 0;
 	}
-	$points_maps .=']';
-	$popData .=']';
+	$gpxDataCnt=getGpxdataCount();
+	$cacheFileName = "$folder,$mtime,$gpxDataCnt,$donotreducegpx,$pointsoffset,$uom,$distanceType,v1.3.9";
 	
+	$cacheFileName = md5( $cacheFileName );
+	
+	$gpxcache = gpxCacheFolderPath();
+	
+	if ( ! ( file_exists( $gpxcache ) && is_dir( $gpxcache ) ) )
+	    @mkdir( $gpxcache, 0755, true );
+	    
+	    $gpxcache .= DIRECTORY_SEPARATOR . $cacheFileName . '.tmp';
+	    
+	    /* Try to load cache */
+	    if ( file_exists( $gpxcache ) && ! ( true == $skipcache ) ) {
+	        
+	        try {
+	            $cache_str          = file_get_contents( $gpxcache );
+	            $cache_obj          = unserialize( $cache_str );
+	            $points_maps        = $cache_obj['points_maps'];
+	            $popData      = $cache_obj['$popData'];
+	            $points_x_lat       = $cache_obj['points_x_lat'];
+	            $points_x_lon       = $cache_obj['points_x_lon'];
+	            
+	            
+	        } catch ( Exception $e ) {
+	            $points_maps        = '';
+	            $popData      = '';
+	            $points_x_lat       = '';
+	            $points_x_lon       = '';
+	            
+	        }
+	    }
+	    if ((! isset($points_maps) || $points_maps == '') && $folder != '') {
+
+        $files = scandir($folder);
+        $points_maps = '[';
+        $popData = '[';
+        foreach ($files as $file) {
+
+            if (strtolower(substr($file, - 4)) == '.gpx') {
+
+                $gpx = $folder . DIRECTORY_SEPARATOR . $file;
+                $pop = maxGetData($gpx);
+                if ($pop == '') {
+                    continue;
+                }
+                $points = wpgpxmaps_getPoints_max($gpx, $pointsoffset, false, $distanceType);
+                $points_x_lat = $points->lat;
+                $points_x_lon = $points->lon;
+
+                $points_route = '[';
+                if (is_array($points_x_lat))
+                    foreach (array_keys($points_x_lat) as $i) {
+                        $_lat = (float) $points_x_lat[$i];
+                        $_lon = (float) $points_x_lon[$i];
+
+                        if (0 == $_lat && 0 == $_lon) {
+                            $points_route .= 'null,';
+                        } else {
+                            $points_route .= '[' . number_format((float) $points_x_lat[$i], 7, '.', '') . ',' . number_format((float) $points_x_lon[$i], 7, '.', '') . '],';
+                            $_dist = (float) $points->dist[$i];
+
+                            if ('1' == $uom) {
+                                /* feet / miles */
+                                $_dist *= 0.000621371192;
+                            } elseif ('2' == $uom) {
+                                /* meters / kilometers */
+                                $_dist = (float) ($_dist / 1000);
+                            } elseif ('3' == $uom) {
+                                /* meters / nautical miles */
+                                $_dist = (float) ($_dist / 1000 / 1.852);
+                            } elseif ('4' == $uom) {
+                                /* meters / miles */
+                                $_dist *= 0.000621371192;
+                            } elseif ('5' == $uom) {
+                                /* feet / nautical miles */
+                                $_dist = (float) ($_dist / 1000 / 1.852);
+                            }
+                        }
+                    }
+                $points_route .= '],';
+                $points_maps .= $points_route;
+                $popData .= '"' . $pop . '",';
+                // print_r( $points );
+            }
+        }
+        $points_maps .= ']';
+        $popData .= ']';
+    }
+    
+    if ( ! ( true == $skipcache ) ) {
+        
+        @file_put_contents( $gpxcache, serialize( array(
+            'points_maps'        => $points_maps,
+            '$popData'      => $popData,
+            'points_x_lat'       => $points_x_lat,
+            'points_x_lon'       => $points_x_lon,
+        )
+            ),
+            LOCK_EX);
+        @chmod( $gpxcache, 0755 );
+    }
 	global $post;
 	$r = $post->ID . '_' . rand( 1,5000000 );
 	$w              = wpgpxmaps_findValue( $attr, 'width', 'wpgpxmaps_width', '100%' );
@@ -198,13 +253,13 @@ function wpgpxmaps_handle_folder_shortcodes( $attr, $content = '' ) {
 					waypoints          : [],
 					unit               : "' . $uom . '",
 					unitspeed          : "' . $uomspeed . '",
-					color1             : ["#3366cc"],
-					color2             : ["#3366cc"],
-					color3             : ["#ff0000"],
-					color4             : ["#ff77bd"],
-					color5             : "#beecff",
-					color6             : "#beecff",
-					color7             : "#ff77bd",
+					color1             : ["red"],
+					color2             : ["yellow"],
+					color3             : ["blue"],
+					color4             : ["green"],
+					color5             : ["orange"],
+					color6             : ["purple"],
+					color7             : ["brown"],
 					chartFrom1         : "",
 					chartTo1           : "",
 					chartFrom2         : "",
