@@ -326,9 +326,9 @@ var WPGPXMAPS = {
 				var lng = this.lng;
 				var EventSelectChart = this.EventSelectChart;
 
-				this.Bounds = mapData;
+				//this.Bounds = mapData;
 				var polyline=[];
-				this.CenterMap();
+				//this.CenterMap();
 				for ( i = 0; i < pointsArray.length; i++ ) {
 					try {
 						polyline[i] = L.polyline(  pointsArray[i], {color: color1}).addTo( this.map );
@@ -1105,6 +1105,8 @@ var WPGPXMAPS = {
 				for ( i = 0; i < mapData.length; i++ ) {
 					map.AppPolylinesMax( mapData[i], popData[i],colors[i%colors.length], currentIcon, startIcon, endIcon );
 				}
+				map.Bounds = mapData;
+				map.CenterMap();
 			}else{
 				map.AppPolylines( mapData, color1, currentIcon, startIcon, endIcon );
 			}

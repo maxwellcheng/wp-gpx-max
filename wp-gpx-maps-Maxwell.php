@@ -84,7 +84,14 @@ function maxGetData($filen){
     if (!$data) {
         return ['',''];
     }
-    $output="<center><a target=_blank href='".$data->post_url."'><span class='normalfont'>".$data->post_title."</span><br><img src='".$data->post_featured_image."' width=250></a></center><br><table class='normalfont' width=250><tr><td valign=top align=left width=25%>\u5206\u985e:</td><td colspan='3'>".$data->post_category."</td></tr><tr><td>\u5168\u9577:</td><td>".$data->total_distance_km."<td valign=top>\u9700\u6642:</td><td>".$data->total_time."</td></tr><tr><td>\u6700\u9ad8:</td><td>".$data->max_elevation_m."<td valign=top>\u6700\u4f4e:</td><td>".$data->min_elevation_m."</td></tr><tr><td valign=top align=left width=60 colspan='4'>".preg_replace("/\r\n|\r|\n/", '<br/>', $data->post_excerpt)."</td></tr></table>";
+    
+    $elevation="";
+    if($data->total_time){
+        $elevation="<tr><td>\u5168\u9577:</td><td>".$data->total_distance_km."<td valign=top>\u9700\u6642:</td><td>".$data->total_time."</td></tr><tr><td>\u6700\u9ad8:</td><td>".$data->max_elevation_m."<td valign=top>\u6700\u4f4e:</td><td>".$data->min_elevation_m."</td></tr>";
+    }else{
+        $elevation="<tr><td>\u5168\u9577:</td><td>".$data->total_distance_km."</tr>";
+    }
+    $output="<center><a target=_blank href='".$data->post_url."'><img src='".$data->post_featured_image."' width=250><br><span class=''>".$data->post_title."</span></a></center><br><table class='' width=250><tr><td valign=top align=left width=25%>\u5206\u985e:</td><td colspan='3'>".$data->post_category."</td></tr>".$elevation."<tr><td valign=top align=left width=60 colspan='4'>".preg_replace("/\r\n|\r|\n/", '<br/>', $data->post_excerpt)."</td></tr></table>";
     
     foreach (get_the_category($data->post_id) as $key => $value) {
         $cats[] = $value->name;
