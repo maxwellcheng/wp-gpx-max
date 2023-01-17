@@ -327,16 +327,11 @@ var WPGPXMAPS = {
 				var EventSelectChart = this.EventSelectChart;
 
 				this.Bounds = mapData;
-
+				var polyline=[];
 				this.CenterMap();
 				for ( i = 0; i < pointsArray.length; i++ ) {
-					if ( i < color1.length ) {
-						color = color1[i];
-					} else {
-						color = color1[color1.length - 1];
-					}
 					try {
-						polyline[i] = L.polyline(  pointsArray[i], {color: color}).addTo( this.map );
+						polyline[i] = L.polyline(  pointsArray[i], {color: color1}).addTo( this.map );
 						this.Polylines.push( polyline[i] );
 
 						var context = this;
@@ -348,17 +343,37 @@ var WPGPXMAPS = {
 						polyline[i].on('popupopen', function (event) {
 							this.setStyle({
 								color: 'yellow',
+								weight:5,
 								opacity: 1.0
 							});
 							this.bringToFront();
 						});
 						polyline[i].on('popupclose', function (event) {
 							this.setStyle({
-								color: color,
+								color: color1,
+								weight:3,
 								opacity: 1.0
 							});
-});
-					} catch ( err ) {
+						});
+						polyline[i].on('mouseover', function (event) {
+							this.setStyle({
+								color: 'yellow',
+								weight:5,
+								opacity: 1.0
+							});
+							this.bringToFront();
+						});
+						polyline[i].on('mouseout', function (event) {
+							this.setStyle({
+								color: color1,
+								weight:3,
+								opacity: 1.0
+							});
+						});
+					} catch ( e ) {
+						console.log("Error", e.stack);
+						console.log("Error", e.name);
+						console.log("Error", e.message);
 					}
 				}
 
@@ -821,6 +836,7 @@ var WPGPXMAPS = {
 		var color5 = params.color5;
 		var color6 = params.color6;
 		var color7 = params.color7;
+		var colorData = params.colorData;
 		var chartFrom1 = params.chartFrom1;
 		var chartTo1 = params.chartTo1;
 		var chartFrom2 = params.chartFrom2;
@@ -1084,7 +1100,7 @@ var WPGPXMAPS = {
 		if ( mapData != '' ) {
 			var isMultiGpx=mapData.length>0 && mapData[0].length>2;
 			if(isMultiGpx){
-				var colors=[color1,color2,color3,color4,color5,color6,color7]
+				var colors=params.colorData;
 				var popData = params.popData;
 				for ( i = 0; i < mapData.length; i++ ) {
 					map.AppPolylinesMax( mapData[i], popData[i],colors[i%colors.length], currentIcon, startIcon, endIcon );
