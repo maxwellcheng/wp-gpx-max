@@ -91,7 +91,11 @@ function maxGetData($filen){
     }else{
         $elevation="<tr><td>\u5168\u9577:</td><td>".$data->total_distance_km."</tr>";
     }
-    $output="<center><a target=_blank href='".$data->post_url."'><img src='".$data->post_featured_image."' width=250><br><span class=''>".$data->post_title."</span></a></center><br><table class='' width=250><tr><td valign=top align=left width=25%>\u5206\u985e:</td><td colspan='3'>".$data->post_category."</td></tr>".$elevation."<tr><td valign=top align=left width=60 colspan='4'>".preg_replace("/\r\n|\r|\n/", '<br/>', $data->post_excerpt)."</td></tr></table>";
+    
+    $title=str_replace(array('\'', '"'), '',$data->post_title);
+    $excerpt=str_replace(array('\'', '"'), '', preg_replace("/\r\n|\r|\n/", '<br/>', $data->post_excerpt));
+    
+    $output="<center><a target=_blank href='".$data->post_url."'><img src='".$data->post_featured_image."' width=250><br><span class=''>".$title."</span></a></center><br><table class='' width=250><tr><td valign=top align=left width=25%>\u5206\u985e:</td><td colspan='3'>".$data->post_category."</td></tr>".$elevation."<tr><td valign=top align=left width=60 colspan='4'>".$excerpt."</td></tr></table>";
     
     foreach (get_the_category($data->post_id) as $key => $value) {
         $cats[] = $value->name;
@@ -326,7 +330,7 @@ function wpgpxmaps_handle_folder_shortcodes( $attr, $content = '' ) {
 			});
 						    
 		</script>';
-	return $output;
+	return str_replace(',]', ']', $output);
 }
 
 function wpgpxmaps_getPoints_max( $gpxPath, $gpxOffset = 10, $donotreducegpx = false, $distancetype = 0) {
