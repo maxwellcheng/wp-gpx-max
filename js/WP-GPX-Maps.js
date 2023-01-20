@@ -306,41 +306,21 @@ var WPGPXMAPS = {
 
 				var first = WPGPXMAPS.Utils.GetItemFromArray( mapData, 0 );
 
-				if ( '' == currentIcon ) {
-					currentIcon = 'https://maps.google.com/mapfiles/kml/pal4/icon25.png';
-				}
-
-				var CurrentPositionMarker = L.marker( first, { icon: L.icon ({
-					iconUrl: currentIcon,
-					iconSize: [ 32, 32 ], // Size of the icon.
-					iconAnchor: [ 16, 16 ] // Point of the icon which will correspond to marker's location.
-				})
-				});
-				CurrentPositionMarker.addTo( this.map );
-				CurrentPositionMarker.title = 'Current';
-
-				this.CurrentPositionMarker = CurrentPositionMarker;
-
 				var pointsArray = WPGPXMAPS.Utils.DividePolylinesPoints( mapData );
 
 				var lng = this.lng;
-				var EventSelectChart = this.EventSelectChart;
 
-				//this.Bounds = mapData;
-				var polyline=[];
-				//this.CenterMap();
 				for ( i = 0; i < pointsArray.length; i++ ) {
 					try {
-						polyline[i] = L.polyline(  pointsArray[i], {color: color1}).addTo( this.map );
-						this.Polylines.push( polyline[i] );
-
+						var polyline = L.polyline(  pointsArray[i], {color: color1}).addTo( this.map );
+						this.Polylines.push( polyline );
 						var context = this;
 
-						polyline[i].bindPopup(popData, {
+						polyline.bindPopup(popData, {
 							minWidth: 250,
 							maxWidth: 250
 						});
-						polyline[i].on('popupopen', function (event) {
+						polyline.on('popupopen', function (event) {
 							this.setStyle({
 								color: 'yellow',
 								weight:5,
@@ -348,14 +328,14 @@ var WPGPXMAPS = {
 							});
 							this.bringToFront();
 						});
-						polyline[i].on('popupclose', function (event) {
+						polyline.on('popupclose', function (event) {
 							this.setStyle({
 								color: color1,
 								weight:3,
 								opacity: 1.0
 							});
 						});
-						polyline[i].on('mouseover', function (event) {
+						polyline.on('mouseover', function (event) {
 							this.setStyle({
 								color: 'yellow',
 								weight:5,
@@ -363,7 +343,7 @@ var WPGPXMAPS = {
 							});
 							this.bringToFront();
 						});
-						polyline[i].on('mouseout', function (event) {
+						polyline.on('mouseout', function (event) {
 							this.setStyle({
 								color: color1,
 								weight:3,
@@ -662,6 +642,9 @@ var WPGPXMAPS = {
 							context.MoveMarkerToPosition([ e.latlng.lat, e.latlng.lng ], true );
 						});
 					} catch ( err ) {
+						console.log("Error", e.stack);
+						console.log("Error", e.name);
+						console.log("Error", e.message);
 					}
 				}
 
